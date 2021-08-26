@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import {generate as id} from 'shortid'
 
@@ -19,60 +19,65 @@ const List = styled.ul`
     padding-left: 0;
 `
 
+const Chronometer = () => {
+    const [clock, setClock] = useState({
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        miliseconds: 0
+    })
+    const [running,setRunning] = useState(false)
+    const [allTimestamps,setAllTimestamps] = useState([])
+    const [started,setStarted] = useState(false)
 
-class Chronometer extends Component {
-
-    state = {
-        hours:0,
-        minutes:0,
-        seconds:0,
-        miliseconds:0,
-        running: false,
-        allTimestamps: [],
-        started:false
-    }
-
-    addZero(value){
-        return value < 10 ? `0${value}` : value
-    }
-
-    handleStartClick = () =>{
-        if(!this.state.running){
-            this.interval = setInterval(()=> {
-                this.tick()
+    useEffect(() => {
+        if(running){
+            const interval = setInterval(()=>{
+                tick()
             },10)
+            return() => clearInterval(interval)
+        }
+    }, [running, clock]);
+    
+    const addZero = (value) => (
+        value < 10 ? `0${value}` : value
+    )
 
-            this.setState({running: true, started: true})
+    const handleStartClick = () =>{
+        if(!running){
+            setRunning(true)
+            setStarted(true)
         }
     }
 
-    handleStopClick = () =>{
-        if(this.state.running){
-            clearInterval(this.interval)
-            this.setState({running: false})
+    const handleStopClick = () =>{
+        if(running){
+            setRunning(false)
         }
     }
 
-    handleResetClick = () =>{
-        this.updateTimer(0, 0, 0,0)
-        this.setState({allTimestamps: [], started:false })
+    const handleResetClick = () =>{
+        updateTimer(0, 0, 0,0)
+        setAllTimestamps([])
+        setStarted(false)
     }
 
-    handleTimestamp = () => {
-        const {hours, minutes, seconds, miliseconds, allTimestamps} = this.state
-        const timestamp = {hours, minutes, seconds, miliseconds}
-        const timestamps = allTimestamps
+    const handleTimestamp = () => {
+        const timestamp = {
+            hours: clock.hours, 
+            minutes: clock.minutes, 
+            seconds: clock.seconds, 
+            miliseconds: clock.miliseconds}
 
-        timestamps.push(timestamp)
-
-        this.setState({allTimestamps: timestamps})
+        setAllTimestamps([
+            ...allTimestamps,
+            timestamp
+        ])
     }
 
-    tick() {
-        let hours = this.state.hours 
-        let minutes = this.state.minutes 
-        let seconds = this.state.seconds 
-        let miliseconds = this.state.miliseconds + 1
+    const tick = () => {
+        let{hours,minutes,seconds,miliseconds} = clock 
+        miliseconds = miliseconds + 1
 
         if(miliseconds === 100){
             miliseconds = 0
@@ -87,48 +92,45 @@ class Chronometer extends Component {
             }
         }
 
-        this.updateTimer(miliseconds, seconds, minutes,hours)
+        updateTimer(miliseconds, seconds, minutes,hours)
     }
 
-    updateTimer(miliseconds, seconds, minutes,hours){
-        this.setState({
-            miliseconds, seconds, minutes,hours
-        })
+    const updateTimer = (miliseconds, seconds, minutes,hours) => {
+        setClock({miliseconds, seconds, minutes,hours})
     }
 
 
 
-    render(){
-        let {hours,minutes,seconds,miliseconds, running, allTimestamps, started} = this.state
-        hours= this.addZero(hours)
-        minutes= this.addZero(minutes)
-        seconds= this.addZero(seconds)
-        miliseconds= this.addZero(miliseconds)
-        return(
-            <>
-                <h3>{`${hours}:${minutes}:${seconds}:${miliseconds}`}</h3>
+    let {hours,minutes,seconds,miliseconds} = clock
+    hours= addZero(hours)
+    minutes= addZero(minutes)
+    seconds= addZero(seconds)
+    miliseconds= addZero(miliseconds)
+    return(
+        <>
+            <h3>{`${hours}:${minutes}:${seconds}:${miliseconds}`}</h3>
 
-                <Button disabled={running} onClick={this.handleStartClick}>START</Button>
-                <Button disabled={!running} onClick={this.handleStopClick}>STOP</Button>
-                <Button disabled={!running} onClick={this.handleTimestamp}>TIMESTAMP</Button>
-                <Button disabled={((!started && !running) || (started && running))} onClick={this.handleResetClick}>RESET</Button>
+            <Button disabled={running} onClick={handleStartClick}>START</Button>
+            <Button disabled={!running} onClick={handleStopClick}>STOP</Button>
+            <Button disabled={!running} onClick={handleTimestamp}>TIMESTAMP</Button>
+            <Button disabled={((!started && !running) || (started && running))} onClick={handleResetClick}>RESET</Button>
                
-                <List>
-                     {allTimestamps.map((timestamps, idx)=>(
-                         <li key={id()}>
-                             {`
-                                ${idx + 1} -
-                                ${this.addZero(timestamps.hours)}:
-                                ${this.addZero(timestamps.minutes)}:
-                                ${this.addZero(timestamps.seconds)}:
-                                ${this.addZero(timestamps.miliseconds)}
-                             `}
-                         </li>
-                     ))}
-                </List>
-            </>
-        )
-    }
+            <List>
+                {allTimestamps.map((timestamps, idx)=>(
+                    <li key={id()}>
+                        {`
+                            ${idx + 1} -
+                            ${addZero(timestamps.hours)}:
+                            ${addZero(timestamps.minutes)}:
+                            ${addZero(timestamps.seconds)}:
+                            ${addZero(timestamps.miliseconds)}
+                        `}
+                    </li>
+                ))}
+            </List>
+        </>
+    )
+
 }
 
 export default Chronometer;
